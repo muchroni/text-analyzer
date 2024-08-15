@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text Analyzer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #ffff;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        textarea {
+            width: 100%;
+            height: 200px;
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #result {
+            margin-top: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Text Analyzer</h1>
+        <textarea id="inputText" placeholder="Enter text here..."></textarea>
+        <button onclick="analyzeText()">Analyze</button>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        function analyzeText() {
+            const text = document.getElementById('inputText').value;
+            const wordCount = text.trim().split(/\s+/).length;
+            const charCount = text.length;
+            const sentenceCount = text.split(/[.!?]+/).length - 1;
+            const paragraphCount = text.split(/\n\s*\n/).length;
+            const readingTime = Math.ceil(wordCount / 200); // Asumsi 200 kata per menit
+
+            // Menghitung keyword density
+            const words = text.toLowerCase().match(/\b\w+\b/g);
+            const wordFreq = {};
+            words.forEach(word => {
+                wordFreq[word] = (wordFreq[word] || 0) + 1;
+            });
+            const sortedWords = Object.entries(wordFreq).sort((a, b) => b[1] - a[1]).slice(0, 5);
+
+            // Menghitung Flesch-Kincaid Reading Ease
+            const syllableCount = countSyllables(text);
+            const fleschScore = 206.835 - 1.015 * (wordCount / sentenceCount) - 84.6 * (syllableCount / wordCount);
+            const readabilityLevel = getReadabilityLevel(fleschScore);
+
+            let resultHTML = `
+                <h2>Analyze Results</h2>
+                <table>
+                    <tr><th>Metrics</th><th>Count</th></tr>
+                    <tr><td>Word Count</td><td>${wordCount}</td></tr>
+                    <tr><td>Letter Count</td><td>${charCount}</td></tr>
+                    <tr><td>Sentence Count</td><td>${sentenceCount}</td></tr>
+                    <tr><td>Paragraph Count</td><td>${paragraphCount}</td></tr>
+                    <tr><td>Reading Time (minutes)</td><td>${readingTime}</td></tr>
+                    <tr><td>Readability Score</td><td>${fleschScore.toFixed(2)}</td></tr>
+                    <tr><td>Readability Level</td><td>${readabilityLevel}</td></tr>
+                </table>
+                <h3>Keyword Density ( Top 5)</h3>
+                <table>
+                    <tr><th>Word</th><th>Frequency</th><th>Persentase</th></tr>
+            `;
+
+            sortedWords.forEach(([word, freq]) => {
+                const percentage = ((freq / words.length) * 100).toFixed(2);
+                resultHTML += `<tr><td>${word}</td><td>${freq}</td><td>${percentage}%</td></tr>`;
+            });
+
+            resultHTML += '</table>';
+            document.getElementById('result').innerHTML = resultHTML;
+        }
+
+        function countSyllables(text) {
+            const words = text.toLowerCase().split(/\s+/);
+            let count = 0;
+            const regex = /[aeiou]/g;
+            const exceptions = ['es', 'ed', 'e'];
+
+            words.forEach(word => {
+                word = word.replace(/(?:[^laeiouy]es|ed|[^laeiouy]e)$/, '');
+                word = word.replace(/^y/, '');
+                let syllables = word.match(regex);
+                count += syllables ? syllables.length : 1;
+            });
+
+            return count;
+        }
+
+        function getReadabilityLevel(score) {
+            if (score >= 90) return "Very Easy";
+            if (score >= 80) return "Easy";
+            if (score >= 70) return "Fairly Easy";
+            if (score >= 60) return "Standard";
+            if (score >= 50) return "Fairly Difficult";
+            if (score >= 30) return "Difficult";
+            return "Very Difficult";
+        }
+    </script>
+</body>
+</html>
